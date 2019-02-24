@@ -33,7 +33,7 @@ def main():
 
     files = [
         file for file in file_list
-        if not file.startswith('#') and Path(file).exists()
+        if file and not file.startswith('#') and Path(file).exists()
     ]
 
     if not files:
