@@ -1,18 +1,24 @@
 #!/usr/bin/env python3
 
-from pathlib import Path
-from contextlib import contextmanager
 import subprocess
-import shlex
+from contextlib import contextmanager
+from pathlib import Path
 
-BACKUP_HOME = Path('/home/snoobackup')
+BACKUPS_USER = 'snoobackup'
+BACKUP_HOME = Path('/home').resolve() / BACKUPS_USER
 BACKUP_DEST = BACKUP_HOME / 'backupdata'
 FILELIST_PATH = BACKUP_HOME / 'filelist'
+LOCKFILE = BACKUP_HOME / '.backup-in-progress'
+ACL_BACKUP_FILE = BACKUP_DEST / 'acls.bak'
+
+RSYNC_OPTIONS = [
+    '-aRPEXA', '--delete'
+]
 
 
 @contextmanager
 def backup_lock():
-    f = BACKUP_HOME / '.backup-in-progress'
+    f = LOCKFILE
     if f.exists():
         raise FileExistsError("Lock file exists! {}".format(f))
 
@@ -35,21 +41,24 @@ def main():
 
     with backup_lock():
         subprocess.check_call(
-            ['rsync', '-aRPEXA', '--delete'] + files + [str(BACKUP_DEST)],
+            ['rsync'] + RSYNC_OPTIONS + files + [str(BACKUP_DEST)],
             stdout=subprocess.DEVNULL
         )
-        with (BACKUP_DEST / 'acls.bak').open('w') as f:
+        with ACL_BACKUP_FILE.open('w') as f:
             subprocess.check_call([
                 'getfacl', '-R', '.'
             ], stdout=f, cwd=str(BACKUP_DEST))
 
-        subprocess.check_call(shlex.split('setfacl -R -m u:snoobackup:r .'), cwd=str(BACKUP_DEST))
         subprocess.check_call(
-            shlex.split('find . -type d -exec setfacl -m u:snoobackup:rx {} \;'),
+            ['setfacl', '-R', '-m', 'u:{}:r'.format(BACKUPS_USER), '.'],
             cwd=str(BACKUP_DEST)
         )
+        subprocess.check_call([
+            'find', '.', '-type', 'd', '-exec',
+            'setfacl', '-m', 'u:{}:rx'.format(BACKUPS_USER),
+            '{}', '\\;'
+        ], cwd=str(BACKUP_DEST))
 
 
 if __name__ == '__main__':
     main()
-
