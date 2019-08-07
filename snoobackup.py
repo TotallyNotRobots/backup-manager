@@ -12,7 +12,7 @@ LOCKFILE = BACKUP_HOME / '.backup-in-progress'
 ACL_BACKUP_FILE = BACKUP_DEST / 'acls.bak'
 
 RSYNC_OPTIONS = [
-    '-aRPEXA', '--delete'
+    '-aRPEXA', '--delete', '--exclude={}'.format(BACKUP_DEST)
 ]
 
 
