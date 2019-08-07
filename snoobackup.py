@@ -23,8 +23,10 @@ def backup_lock():
         raise FileExistsError("Lock file exists! {}".format(f))
 
     f.touch()
-    yield
-    f.unlink()
+    try:
+        yield
+    finally:
+        f.unlink()
 
 
 def main():
