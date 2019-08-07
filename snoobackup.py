@@ -56,7 +56,7 @@ def main():
         subprocess.check_call([
             'find', '.', '-type', 'd', '-exec',
             'setfacl', '-m', 'u:{}:rx'.format(BACKUPS_USER),
-            '{}', '\\;'
+            '{}', ';'
         ], cwd=str(BACKUP_DEST))
 
 
